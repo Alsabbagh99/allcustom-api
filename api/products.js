@@ -19,6 +19,16 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // Only allow GET here
+  if (req.method !== 'GET') {
+    res.statusCode = 405;
+    res.end(JSON.stringify({
+      ok: false,
+      error: 'Method not allowed. Use GET.'
+    }));
+    return;
+  }
+
   // Get ?handle= from the URL
   const parsedUrl = url.parse(req.url, true);
   const handle = parsedUrl.query.handle;
