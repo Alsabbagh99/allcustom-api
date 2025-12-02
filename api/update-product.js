@@ -6,10 +6,8 @@
 //   "productId": "gid://shopify/Product/...",
 //   "descriptionHtml": "<p>New description</p>",
 //   "seoTitle": "New SEO Title",
-//   "seoDescription": "New SEO description",
-//   "images": [
-//     { "id": "gid://shopify/ProductImage/...", "altText": "New alt text" }
-//   ]
+//   "seoDescription": "New SEO description"
+//   // NOTE: images are currently ignored because ProductInput doesn't support images in this API version
 // }
 
 module.exports = async (req, res) => {
@@ -69,8 +67,8 @@ module.exports = async (req, res) => {
     productId,
     descriptionHtml,
     seoTitle,
-    seoDescription,
-    images
+    seoDescription
+    // images - ignored for now
   } = payload;
 
   // Simple security: check apiKey
@@ -106,13 +104,6 @@ module.exports = async (req, res) => {
     };
   }
 
-  if (Array.isArray(images) && images.length > 0) {
-    input.images = images.map(img => ({
-      id: img.id,
-      altText: img.altText || ''
-    }));
-  }
-
   const endpoint = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`;
 
   const mutation = `
@@ -126,15 +117,6 @@ module.exports = async (req, res) => {
           seo {
             title
             description
-          }
-          images(first: 10) {
-            edges {
-              node {
-                id
-                altText
-                url
-              }
-            }
           }
         }
         userErrors {
@@ -189,12 +171,7 @@ module.exports = async (req, res) => {
       handle: product.handle,
       descriptionHtml: product.descriptionHtml,
       seoTitle: product.seo?.title || null,
-      seoDescription: product.seo?.description || null,
-      images: (product.images?.edges || []).map(edge => ({
-        id: edge.node.id,
-        altText: edge.node.altText,
-        url: edge.node.url
-      }))
+      seoDescription: product.seo?.description || null
     };
 
     res.statusCode = 200;
