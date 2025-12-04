@@ -146,6 +146,78 @@ If any English field is missing, set the corresponding Arabic field to null.
       });
     }
 
+    // 3) Build TranslationInput[] for Shopify (Arabic locale "ar")
+    const translationInputs = [];
+
+    if (translations.title_ar) {
+      translationInputs.push({
+        locale: "ar",
+        key: "title",
+        value: translations.title_ar,
+      });
+    }
+
+    if (translations.descriptionHtml_ar) {
+      translationInputs.push({
+        locale: "ar",
+        key: "descriptionHtml",
+        value: translations.descriptionHtml_ar,
+      });
+    }
+
+    // (SEO keys are trickier; for now we rely on Shopify using translated title/description for SEO)
+
+    let registerResult = null;
+
+    if (translationInputs.length > 0) {
+      const registerMutation = `
+        mutation translationsRegister($resourceId: ID!, $translations: [TranslationInput!]!) {
+          translationsRegister(resourceId: $resourceId, translations: $translations) {
+            userErrors {
+              message
+              field
+            }
+            translations {
+              key
+              locale
+              value
+            }
+          }
+        }
+      `;
+
+      const registerRes = await fetch(
+        `https://${storeDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": adminToken,
+          },
+          body: JSON.stringify({
+            query: registerMutation,
+            variables: {
+              resourceId: id,
+              translations: translationInputs,
+            },
+          }),
+        }
+      );
+
+      const registerJson = await registerRes.json();
+
+      if (!registerRes.ok || registerJson.errors) {
+        console.error("translationsRegister error:", registerJson);
+        return res.status(500).json({
+          ok: false,
+          error: "Shopify translationsRegister API error",
+          details: registerJson.errors || registerJson,
+        });
+      }
+
+      registerResult = registerJson.data?.translationsRegister || null;
+    }
+
     return res.status(200).json({
       ok: true,
       productId: id,
@@ -157,6 +229,7 @@ If any English field is missing, set the corresponding Arabic field to null.
         seoDescription: seo?.description ?? null,
       },
       translations,
+      shopifyTranslationsRegister: registerResult,
     });
   } catch (err) {
     console.error("Unexpected error in /api/translate-product:", err);
