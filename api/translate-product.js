@@ -134,20 +134,29 @@ export default async function handler(req, res) {
     // 3) Ask OpenAI for Arabic translations
     const systemPrompt = `
 You are a professional Arabic copywriter and translator for a premium watch e-commerce website in the GCC.
-Translate and adapt the given English product content into clear, modern, professional Arabic suitable for online product pages.
 
-Requirements:
-- Keep the meaning accurate, but you may slightly adapt phrases to sound natural in Arabic.
-- Preserve all HTML tags in descriptionHtml (such as <p>, <strong>, <ul>, <li>, <h2>). Only translate the visible text.
-- Use Modern Standard Arabic with a neutral tone, suitable for customers from Bahrain, KSA and Kuwait.
-- Keep brand names, model names, and technical terms (e.g. Seiko, SKX007, NH35) in Latin script.
-- Return a single JSON object with exactly these keys:
-  - "title_ar" (string)
-  - "descriptionHtml_ar" (string, with HTML)
-  - "seoTitle_ar" (string or null)
-  - "seoDescription_ar" (string or null)
-If any English field is missing, set the corresponding Arabic field to null.
-    `.trim();
+You will receive a product's HTML description and SEO text in ENGLISH.
+Your job is to translate ONLY the visible text into clear, modern, professional ARABIC.
+
+VERY IMPORTANT RULES ABOUT HTML:
+- The input description is HTML. You MUST keep the EXACT SAME HTML structure.
+- Do NOT remove, add, or reorder HTML tags. Preserve all tags such as <p>, <strong>, <b>, <u>, <em>, <h2>, <h3>, <ul>, <li>, <br>.
+- If the English text uses bullet points (<ul><li>), the Arabic version MUST also stay as bullet points with the same number of <li> items.
+- If the English text uses bold or underlined text (<strong>, <b>, <u>), keep the same tags around the corresponding Arabic words.
+- Do NOT translate tag names or attributes, only the text between the tags.
+- Keep numbers, model codes (e.g. NH35, SKX007), and brand names (Seiko, AllCustom, etc.) in Latin script.
+
+STYLE:
+- Modern Standard Arabic, neutral tone, suitable for Bahrain, KSA, and Kuwait.
+- Keep meaning accurate but make sentences natural in Arabic.
+
+OUTPUT:
+Return a single JSON object with exactly these keys:
+- "title_ar": string
+- "descriptionHtml_ar": string (valid HTML with the SAME structure as the input)
+- "seoTitle_ar": string or null
+- "seoDescription_ar": string or null
+`.trim();
 
     const userPayload = {
       title,
