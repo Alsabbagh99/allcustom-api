@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     }
 
     // 1) Fetch product from Shopify by handle
-    const shopifyQuery = `
+    const productQuery = `
       query getProductByHandle($handle: String!) {
         productByHandle(handle: $handle) {
           id
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       }
     `;
 
-    const shopifyRes = await fetch(
+    const productRes = await fetch(
       `https://${storeDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
       {
         method: "POST",
@@ -54,24 +54,24 @@ export default async function handler(req, res) {
           "X-Shopify-Access-Token": adminToken,
         },
         body: JSON.stringify({
-          query: shopifyQuery,
+          query: productQuery,
           variables: { handle },
         }),
       }
     );
 
-    const shopifyJson = await shopifyRes.json();
+    const productJson = await productRes.json();
 
-    if (!shopifyRes.ok || shopifyJson.errors) {
-      console.error("Shopify error:", shopifyJson);
+    if (!productRes.ok || productJson.errors) {
+      console.error("Shopify product error:", productJson);
       return res.status(500).json({
         ok: false,
         error: "Shopify API error when fetching product",
-        details: shopifyJson.errors || shopifyJson,
+        details: productJson.errors || productJson,
       });
     }
 
-    const product = shopifyJson.data?.productByHandle;
+    const product = productJson.data?.productByHandle;
     if (!product) {
       return res
         .status(404)
@@ -80,7 +80,58 @@ export default async function handler(req, res) {
 
     const { id, title, descriptionHtml, seo } = product;
 
-    // 2) Ask OpenAI for Arabic translations
+    // 2) Get translatable content digests for this product (for default locale, usually "en")
+    const translatableQuery = `
+      query getTranslatableResource($id: ID!) {
+        translatableResource(resourceId: $id) {
+          resourceId
+          translatableContent {
+            key
+            locale
+            digest
+          }
+        }
+      }
+    `;
+
+    const translatableRes = await fetch(
+      `https://${storeDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": adminToken,
+        },
+        body: JSON.stringify({
+          query: translatableQuery,
+          variables: { id },
+        }),
+      }
+    );
+
+    const translatableJson = await translatableRes.json();
+
+    if (!translatableRes.ok || translatableJson.errors) {
+      console.error("Shopify translatableResource error:", translatableJson);
+      return res.status(500).json({
+        ok: false,
+        error: "Shopify API error when fetching translatable content",
+        details: translatableJson.errors || translatableJson,
+      });
+    }
+
+    const translatableContent =
+      translatableJson.data?.translatableResource?.translatableContent || [];
+
+    // Build a map: key -> digest for the primary locale (assume "en")
+    const digestByKey = {};
+    for (const item of translatableContent) {
+      if (item.locale === "en") {
+        digestByKey[item.key] = item.digest;
+      }
+    }
+
+    // 3) Ask OpenAI for Arabic translations
     const systemPrompt = `
 You are a professional Arabic copywriter and translator for a premium watch e-commerce website in the GCC.
 Translate and adapt the given English product content into clear, modern, professional Arabic suitable for online product pages.
@@ -146,26 +197,26 @@ If any English field is missing, set the corresponding Arabic field to null.
       });
     }
 
-    // 3) Build TranslationInput[] for Shopify (Arabic locale "ar")
+    // 4) Build TranslationInput[] for Shopify (Arabic locale "ar") including digests
     const translationInputs = [];
 
-    if (translations.title_ar) {
+    if (translations.title_ar && digestByKey["title"]) {
       translationInputs.push({
         locale: "ar",
         key: "title",
         value: translations.title_ar,
+        translatableContentDigest: digestByKey["title"],
       });
     }
 
-    if (translations.descriptionHtml_ar) {
+    if (translations.descriptionHtml_ar && digestByKey["descriptionHtml"]) {
       translationInputs.push({
         locale: "ar",
         key: "descriptionHtml",
         value: translations.descriptionHtml_ar,
+        translatableContentDigest: digestByKey["descriptionHtml"],
       });
     }
-
-    // (SEO keys are trickier; for now we rely on Shopify using translated title/description for SEO)
 
     let registerResult = null;
 
