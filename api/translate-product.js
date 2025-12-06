@@ -231,27 +231,32 @@ Return valid JSON with exactly:
     `;
 
     const translationsInput = [
-      {
-        key: "title",
-        locale: "ar",
-        value: title_ar || "",
-      },
-      {
-        key: "descriptionHtml",
-        locale: "ar",
-        value: descriptionHtml_ar,
-      },
-      {
-        key: "seo.title",
-        locale: "ar",
-        value: seoTitle_ar,
-      },
-      {
-        key: "seo.description",
-        locale: "ar",
-        value: seoDescription_ar,
-      },
-    ];
+  {
+    key: "title",
+    locale: "ar",
+    value: title_ar || "",
+    // Dummy digest to satisfy Shopify's non-null requirement
+    translatableContentDigest: "digest-title-ar",
+  },
+  {
+    key: "descriptionHtml",
+    locale: "ar",
+    value: descriptionHtml_ar,
+    translatableContentDigest: "digest-descriptionHtml-ar",
+  },
+  {
+    key: "seo.title",
+    locale: "ar",
+    value: seoTitle_ar,
+    translatableContentDigest: "digest-seo-title-ar",
+  },
+  {
+    key: "seo.description",
+    locale: "ar",
+    value: seoDescription_ar,
+    translatableContentDigest: "digest-seo-description-ar",
+  },
+];
 
     const registerRes = await fetch(
       `https://${storeDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
