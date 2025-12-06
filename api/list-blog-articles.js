@@ -22,31 +22,27 @@ export default async function handler(req, res) {
     }
 
     const query = `
-      query listBlogArticles {
-        blogs(first: 10) {
-          edges {
-            node {
-              id
-              title
-              handle
-              articles(first: 50) {
-                edges {
-                  node {
-                    id
-                    handle
-                    title
-                    seo {
-                      title
-                      description
-                    }
-                  }
-                }
+  query listBlogArticles {
+    blogs(first: 10) {
+      edges {
+        node {
+          id
+          title
+          handle
+          articles(first: 50) {
+            edges {
+              node {
+                id
+                handle
+                title
               }
             }
           }
         }
       }
-    `;
+    }
+  }
+`;
 
     const shopifyRes = await fetch(
       `https://${storeDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
