@@ -76,13 +76,13 @@ export default async function handler(req, res) {
       for (const aEdge of articleEdges) {
         const article = aEdge.node;
         articles.push({
-          id: article.id,
-          handle: article.handle,
-          title: article.title,
-          blogTitle: blog.title,
-          seoTitle: article.seo?.title || null,
-          seoDescription: article.seo?.description || null
-        });
+  id: article.id,
+  handle: article.handle,
+  title: article.title,
+  blogTitle: blog.title,
+  seoTitle: null,
+  seoDescription: null
+});
       }
     }
 
