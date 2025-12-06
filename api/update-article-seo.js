@@ -30,9 +30,42 @@ export default async function handler(req, res) {
       });
     }
 
+    // api/update-article-seo.js
+
+const SHOPIFY_API_VERSION = "2024-07";
+
+export default async function handler(req, res) {
+  try {
+    if (req.method !== "POST") {
+      return res
+        .status(405)
+        .json({ ok: false, error: "Method not allowed. Use POST." });
+    }
+
+    const { articleId, seoTitle, seoDescription } = req.body || {};
+
+    if (!articleId) {
+      return res.status(400).json({
+        ok: false,
+        error: "Missing required field: articleId",
+      });
+    }
+
+    const storeDomain = process.env.SHOPIFY_STORE_DOMAIN;
+    const adminToken = process.env.SHOPIFY_ADMIN_TOKEN;
+
+    if (!storeDomain || !adminToken) {
+      return res.status(500).json({
+        ok: false,
+        error:
+          "Missing environment variables. Check SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_TOKEN.",
+      });
+    }
+
+    // ✅ use OnlineStoreArticle types, not Article
     const mutation = `
-      mutation articleUpdate($input: ArticleInput!) {
-        articleUpdate(input: $input) {
+      mutation onlineStoreArticleUpdate($article: OnlineStoreArticleInput!) {
+        onlineStoreArticleUpdate(article: $article) {
           article {
             id
             title
@@ -51,7 +84,7 @@ export default async function handler(req, res) {
     `;
 
     const variables = {
-      input: {
+      article: {
         id: articleId,
         seo: {
           title: seoTitle || null,
@@ -75,21 +108,21 @@ export default async function handler(req, res) {
     const shopifyJson = await shopifyRes.json();
 
     if (!shopifyRes.ok || shopifyJson.errors) {
-      console.error("Shopify articleUpdate error:", shopifyJson);
+      console.error("Shopify onlineStoreArticleUpdate error:", shopifyJson);
       return res.status(500).json({
         ok: false,
-        error: "Shopify articleUpdate API error",
+        error: "Shopify onlineStoreArticleUpdate API error",
         details: shopifyJson.errors || shopifyJson,
       });
     }
 
-    const result = shopifyJson.data?.articleUpdate;
+    const result = shopifyJson.data?.onlineStoreArticleUpdate;
     const userErrors = result?.userErrors || [];
 
     if (userErrors.length > 0) {
       return res.status(400).json({
         ok: false,
-        error: "Shopify articleUpdate userErrors",
+        error: "Shopify onlineStoreArticleUpdate userErrors",
         userErrors,
       });
     }
