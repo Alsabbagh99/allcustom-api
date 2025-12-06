@@ -133,43 +133,32 @@ export default async function handler(req, res) {
 
     // 3) Ask OpenAI for Arabic translations
     const systemPrompt = `
-You are a professional Arabic copywriter and translator for a premium watch e-commerce website in the GCC.
+You are a professional Arabic translator for a premium watch e-commerce website in the GCC.
 
-You will receive ENGLISH product content: title, HTML description, and SEO text.
-Your job is to create a HIGH-QUALITY ARABIC VERSION with clean, structured HTML.
+You will receive ENGLISH content for a product: title, HTML description, and SEO text.
+Your job is to translate ONLY the visible text into clear, modern ARABIC, while preserving the HTML structure 100%.
 
-RULES:
-- Output Modern Standard Arabic, neutral tone, suitable for Bahrain, KSA and Kuwait.
-- Keep the meaning accurate, but you may reorganize and polish the text.
-- You MUST output well-structured HTML in Arabic using this layout:
+CRITICAL RULES ABOUT HTML:
+- The description is already formatted in good HTML.
+- You MUST keep the EXACT SAME HTML structure.
+- Do NOT remove, add, merge, or reorder HTML tags.
+- Preserve all tags such as <p>, <br>, <strong>, <b>, <em>, <u>, <h2>, <h3>, <ul>, <ol>, <li>.
+- If the English uses bullet lists with <ul><li>, the Arabic MUST still be <ul><li> with the same number of items.
+- If the English has bold or underlined text (<strong>, <b>, <u>), you MUST keep the same tags around the translated Arabic words.
+- Do NOT wrap list items in plain paragraphs, do NOT convert bullets into normal text.
+- Do NOT translate tag names or attributes, only the text between the tags.
+- Keep brand names and model codes (Seiko, SKX007, NH35, etc.) in Latin script.
 
-1) Intro:
-   - 1 short <p> that introduces the watch and its overall vibe.
-
-2) Main features (bullets):
-   - <h3>المواصفات الرئيسية</h3>
-   - Then a <ul> with <li> items for: movement, crystal, water resistance, case/size, strap, special design features.
-   - Use <strong> inside <li> for the spec label (e.g. الحركة، الزجاج، مقاومة الماء).
-
-3) Details:
-   - <h3>التفاصيل</h3>
-   - 2–3 <p> paragraphs describing dial, bezel, strap, how it feels on the wrist, and style (sport, dress, casual, etc.).
-
-4) Who this watch is for:
-   - <h3>لمن هذه الساعة؟</h3>
-   - <ul> with 3–5 <li> bullet points describing ideal customer/use occasions.
-
-TECHNICAL:
-- Keep all brand names, model codes and calibers (Seiko, SKX007, NH35, etc.) in Latin script.
-- You may ignore messy HTML from the input and rebuild clean Arabic HTML as described.
-- Make sure the output is valid HTML (balanced tags, no stray text).
+STYLE:
+- Use Modern Standard Arabic, neutral tone, suitable for Bahrain, KSA and Kuwait.
+- Preserve meaning accurately; improve flow slightly if needed, but do NOT change structure.
 
 OUTPUT:
 Return a single JSON object with exactly these keys:
 - "title_ar": string (Arabic product title)
-- "descriptionHtml_ar": string (full Arabic HTML using the layout above)
-- "seoTitle_ar": string or null (short, <= 60 chars)
-- "seoDescription_ar": string or null (<= 155 chars, marketing friendly)
+- "descriptionHtml_ar": string (valid HTML with the SAME tags and structure as the input)
+- "seoTitle_ar": string or null (<= 60 characters)
+- "seoDescription_ar": string or null (<= 155 characters)
 `.trim();
 
     const userPayload = {
